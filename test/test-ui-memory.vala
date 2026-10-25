@@ -356,6 +356,52 @@ namespace PlanifyUITests {
         check_project_children_release (ProjectViewStyle.BOARD);
     }
 
+    private void test_task_action_menu_is_lazy_and_reused () {
+        var item = Services.Store.instance ().get_item ("ui-memory-task-0");
+        var row = new Layouts.ItemRow (item);
+        var menu = (Gtk.MenuButton) find_type (row, typeof (Gtk.MenuButton));
+        assert_nonnull (menu);
+        assert_null (menu.popover);
+        assert_true (find_type (row, typeof (Widgets.ContextMenu.MenuSwitch)) == null);
+
+        var listbox = new Gtk.ListBox ();
+        listbox.append (row);
+        var window = new Gtk.Window () { child = listbox, default_width = 700, default_height = 600 };
+        window.present ();
+        row.edit = true;
+        settle_frames ();
+        menu.popup ();
+        run_for (100);
+        Gtk.Popover? popup = menu.popover;
+        assert_nonnull (popup);
+        var note = (Widgets.ContextMenu.MenuSwitch) find_type (popup, typeof (Widgets.ContextMenu.MenuSwitch));
+        assert_nonnull (note);
+        note.clicked ();
+        assert_true (item.item_type == ItemType.NOTE);
+        menu.popdown ();
+        settle_frames ();
+        menu.popup ();
+        assert_true (menu.popover == popup);
+        note.clicked ();
+        assert_true (item.item_type == ItemType.TASK);
+        menu.popdown ();
+        settle_frames ();
+
+        var tracked = new Gee.ArrayList<TrackedWidget> ();
+        // GTK's shared tooltip window can be attached after hovering over editor controls.
+        collect_all_widgets (row, tracked, false);
+        row.clean_up ();
+        popup = null;
+        note = null;
+        menu = null;
+        window.child = null;
+        listbox = null;
+        row = null;
+        window.destroy ();
+        window = null;
+        assert_widgets_released (tracked);
+    }
+
     private void test_scheduled_range_releases_children () {
         var today = Utils.Datetime.get_date_only (new DateTime.now_local ());
         var original_dates = new Gee.HashMap<string, string> ();
@@ -431,6 +477,7 @@ namespace PlanifyUITests {
         Test.add_func ("/ui/memory/pinned_card_keyboard_focus", test_pinned_card_keyboard_focus);
         Test.add_func ("/ui/memory/headerbar_disconnects_settings", test_headerbar_disconnects_settings);
         Test.add_func ("/ui/memory/scheduled_range_releases_children", test_scheduled_range_releases_children);
+        Test.add_func ("/ui/memory/task_action_menu_is_lazy_and_reused", test_task_action_menu_is_lazy_and_reused);
         Test.add_func ("/ui/memory/rapid_list_board_switching", test_rapid_list_board_switching);
         Test.add_func ("/ui/memory/sidebar_list_grid_switching", test_sidebar_list_grid_switching);
         Test.add_func ("/ui/memory/project_releases_populated_children", test_project_releases_populated_children);
