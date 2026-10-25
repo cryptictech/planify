@@ -269,6 +269,7 @@ namespace PlanifyUIScenarios {
             record ("clock_anchor");
             clock_marker = null;
             record ("ready", 0, count);
+            rapid_views (window);
             sidebar (window);
             pause (10000);
             record ("final_idle_end");
